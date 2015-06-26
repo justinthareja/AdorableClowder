@@ -9,4 +9,3 @@ var testUser = {
 };
 
 query.createUser(JSON.stringify(testUser));
-
