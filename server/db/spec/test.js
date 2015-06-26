@@ -91,18 +91,21 @@ var Wants = Collections.Wants;
 //   }
 // });
 
+/*
+getAllSkillIds is a promise that accepts an array of skill strings, 
+adds them to the db if not already there, and passes an array of id's 
+associated with the corresponding skill to a .then function
 
-// getAllSkillIds accepts an array of skill strings, adds them to the db if not already there
-// and returns an array of id's associated with the corresponding skill
-// ex: getAllSkillIds(['skyrim', 'yoga', 'surfing']) => [4, 12, 6]
-
+ex: getAllSkillIds(['skyrim', 'yoga', 'surfing']).then(function (ids) {
+  console.log(ids);
+}) => [4, 12, 6]
+*/
 var getAllSkillIds = function (skills) {
   return new Promise (function (resolve, reject) {
 
     var newSkillIds = [];
-    
-    async.each(skills, function (skill, callback) {
 
+    async.each(skills, function (skill, callback) {
       console.log('getting skill ID for', skill);
       getSkillId(skill).then(function(skillId) {
         newSkillIds.push(skillId);
@@ -123,8 +126,8 @@ var getAllSkillIds = function (skills) {
 
 
 // getSkillId is a promise that accepts a raw skill string (eg: 'cooking')
-// and passes it's corresponding id from the DB to the then function
-// if the skill is not already in the db, getSkillId will add it to the db before resolving
+// and passes it's corresponding id from the DB which can be chained to a .then function
+// NOTE: if the skill is not already in the db, getSkillId will add it to the db before resolving
 var getSkillId = function (skill) {
   return new Promise(function (resolve, reject) {
     Offer.forge({ skill: skill }).fetch()
@@ -147,15 +150,14 @@ var getSkillId = function (skill) {
   });
 };
 
+// // a function that takes a username and password and forges
+// // forge new user and attach all skills to the user
+// User.forge({})
+
 getAllSkillIds(['snowboarding', 'reading', 'eating pizza']).then(function (ids) {
   console.log('new skill ids from promise:', ids);
 });
 
-
-// then (new promiste)
-  // grab the array of related id's and save a new user by attaching the indicies to the appropriate table 
-  // (eg: 'wants', 'offers')
-  // v2 = modularize functionality to handle different charts
 
 
 
