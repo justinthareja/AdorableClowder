@@ -12,6 +12,8 @@ var Offers = Collections.Offers;
 var Users = Collections.Users;
 var Wants = Collections.Wants;
 
+
+
 /*
 var allOffers = Collections.allOffers;
 
@@ -95,22 +97,22 @@ Offer.forge({ skill: skill }).fetch().then(function(skillExists) {
 
 
 /*
-getAllSkillIds is a promise that accepts an array of skill strings, 
-adds them to the db if not already there, and passes an array of id's 
-associated with the corresponding skill to a .then function
+getAllSkillIds is a promise that accepts an array of skill strings, and a string representing a 
+Backbone skill type model and adds them to the db if not already there. an array of id's 
+associated with the corresponding skill are passed to the resolve function for .then chaining
 
-ex: getAllSkillIds(['skyrim', 'yoga', 'surfing']).then(function (ids) {
+ex: getAllSkillIds(['skyrim', 'yoga', 'surfing'], 'Want').then(function (ids) {
   console.log(ids);
 }) => [4, 12, 6]
 */
-var getAllSkillIds = function (skills) {
+var getAllSkillIds = function (skills, skillType) {
   return new Promise (function (resolve, reject) {
 
     var newSkillIds = [];
 
     async.each(skills, function (skill, callback) {
       console.log('getting skill ID for', skill);
-      getSkillId(skill).then(function(skillId) {
+      getSkillId(skill, skillType).then(function(skillId) {
         newSkillIds.push(skillId);
         callback();
       });
@@ -128,17 +130,19 @@ var getAllSkillIds = function (skills) {
 
 
 
-// getSkillId is a promise that accepts a raw skill string (eg: 'cooking')
-// and passes it's corresponding id from the DB which can be chained to a .then function
+// getSkillId is a promise that accepts a raw skill string (eg: 'cooking') and a string representing a Backbone class
+// and gets the skill's id from the table based on skill type. the found is then passed through the resolve function
 // NOTE: if the skill is not already in the db, getSkillId will add it to the db before resolving
-var getSkillId = function (skill) {
+var getSkillId = function (skill, skillType) {
+  // convert 'skillType' to the actual Backbone class
+  var Model = Models[skillType];
   return new Promise(function (resolve, reject) {
-    Offer.forge({ skill: skill }).fetch()
+    Model.forge({ skill: skill }).fetch()
       .then(function (skillExists) {
         if (!skillExists) {
-          Offer.forge({ skill: skill}).save()
+          Model.forge({ skill: skill}).save()
             .then(function (savedSkill) {
-              console.log(savedSkill.get('skill'), 'saved successfully in offers table');
+              console.log(savedSkill.get('skill'), 'saved successfully in ' + skillType + 's table');
               console.log('with an id of:', savedSkill.get('id'));
               // pass saved skill id into then function
               resolve(savedSkill.get('id'));
@@ -153,37 +157,65 @@ var getSkillId = function (skill) {
   });
 };
 
-// a function that takes a username and password and list of skills and attaches it with the correct relationship
-// forge a new user
-// fetch it
-// if it exists 
-  // reject with error username doesn't exist
-// if it doesn't exist 
-  // create new user and add it to the db
-// then 
-  // call getAllSkillIds on list of skills
-  // attach array of skill id's to the user with the appropriate relation table ('offers' or 'wants');
 
+// useful when distinguishing between the MySQL table name VS. the Backbone model name
+var convertToModelName = function (tableName) {
+  return tableName.charAt(0).toUpperCase() + tableName.slice(1, tableName.length-1);
+};
 
-var attachSkillsToUser = function (username, skills, table) {
+// attachSkillsToUser is a promise that takes a backbone User model, an array of skills (as strings), 
+// and the corresponding table the skills belong to (eg: 'offers' or 'wants') and creates the Bookstrap version 
+// of a join table between the user and the skills on that table
+var attachSkillsToUser = function (user, skills, table) {
   return new Promise(function (resolve, reject) {
-    User.forge({ username: username }).fetch()
-      .then(function (user) {
-        getAllSkillIds(skills).then(function (ids) {
-          user.related(table).attach(ids);
-          resolve(user);
-        });
-      });
+    getAllSkillIds(skills, convertToModelName(table)).then(function (ids) {
+      user.related(table).attach(ids);
+      resolve(user);
+    });
   });
 };
 
-var skills = ['canyoneering', 'hiking'];
-attachSkillsToUser('mario', skills, 'offers').then(function (user) {
-  console.log('skills attached to user!');
-});
 
 
+// a function that takes the agreed-upon json user-obj posted to '/signup' (see docs/interface.json for more info)
+// adds the user to the database and establishes a link between wanted and offered skills
+var createUser = function (jsonUser) {
+  var user = JSON.parse(jsonUser);
+  User.forge({ username: user.username }).fetch()
+    .then(function (userExists) {
+      if (!userExists) {
+        User.forge({
+          username: user.username,
+          password: user.password,
+          email: user.email
+        }).save()
+          .then(function (savedUser) {
+            attachSkillsToUser(savedUser, user.want, 'wants')
+              .then(function (savedUser) {
+                console.log('successfully attached skills to wants table');
+                attachSkillsToUser(savedUser, user.offer, 'offers');
+              })
+              .then(function (savedUser) {
+                console.log('successfully attached skills to offers table');
+                console.log('USER CREATION SUCCESSFULL!!!!!!');
+              });
+          });
+      } else {
+        console.log(user.username, 'already exists');
+      }
+    });
+};
 
+var bob = {
+  "username": "roberto",
+  "password": 1234,
+  "offer": ["yoga", "cooking"],
+  "want": ["angular"],
+  "email": "austin@gmail.com"
+};
+
+
+createUser(JSON.stringify(bob));
 
 
 
