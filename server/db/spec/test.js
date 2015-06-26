@@ -12,84 +12,87 @@ var Offers = Collections.Offers;
 var Users = Collections.Users;
 var Wants = Collections.Wants;
 
-// var allOffers = Collections.allOffers;
+/*
+var allOffers = Collections.allOffers;
 
 
-// // Query to add a new user with username and password:
-// User.forge({
-//   username: 'mario',
-//   password: 'luigi'
-// }).save().then(function (user) {
-//   console.log('mario successfully saved');
-// });
+Query to add a new user with username and password:
+User.forge({
+  username: 'mario',
+  password: 'luigi'
+}).save().then(function (user) {
+  console.log('mario successfully saved');
+});
 
 
-// // Query to find a user from the DB with username 'mario'
-// // require set to true to trigger error if user is not found
-// User.forge({
-//   username: 'mario'
-// }).fetch({
-//   require: true
-// })
-//   .then(function (foundUser) {
-//     console.log('found user', foundUser);
-//   })
-//   .catch(function () {
-//     console.log('error finding user');
-//   });
+// Query to find a user from the DB with username 'mario'
+// require set to true to trigger error if user is not found
+User.forge({
+  username: 'mario'
+}).fetch({
+  require: true
+})
+  .then(function (foundUser) {
+    console.log('found user', foundUser);
+  })
+  .catch(function () {
+    console.log('error finding user');
+  });
 
 
-// // Query to create two random skills offered
-// Offer.forge({
-//   skill: 'cooking'
-// }).save().then(function (offer) {
-//   console.log('cooking saved as a skill offered');
-// });
+// Query to create two random skills offered
+Offer.forge({
+  skill: 'cooking'
+}).save().then(function (offer) {
+  console.log('cooking saved as a skill offered');
+});
 
-// Offer.forge({
-//   skill: 'javascript'
-// }).save().then(function (offer) {
-//   console.log('javascript saved as a skill offered');
-// });
-
-
-// // Query to create a new user and attach offer_id = 1 and offer_id = 2 to it
-// User.forge({
-//   username: 'spiderman',
-//   password: 'pewpewwebs'
-// }).save().then(function (user) {
-//   user.related('offers').attach([1, 2]);
-// });
-
-// Offers.add({ skill: 'javascript'});
+Offer.forge({
+  skill: 'javascript'
+}).save().then(function (offer) {
+  console.log('javascript saved as a skill offered');
+});
 
 
-// TODO:
-// Create the "sign up" massive query that does the following:
-// var offeredSkills = ['bowling', 'archery', 'sailing'];
-// var convertToModels = function (skills) {
-//   return skills.map(function (skill) {
-//     return {skill: skill};
-//   });
-// };
+// Query to create a new user and attach offer_id = 1 and offer_id = 2 to it
+User.forge({
+  username: 'spiderman',
+  password: 'pewpewwebs'
+}).save().then(function (user) {
+  user.related('offers').attach([1, 2]);
+});
 
-// Offers.forge();
+Offers.add({ skill: 'javascript'});
 
-// allOffers.create({skill: 'cooking'}).then(function (skill) {
-//   console.log('skill added');
-// });
 
-// var skill = 'sailing';
+TODO:
+Create the "sign up" massive query that does the following:
+var offeredSkills = ['bowling', 'archery', 'sailing'];
+var convertToModels = function (skills) {
+  return skills.map(function (skill) {
+    return {skill: skill};
+  });
+};
 
-// allOffers.create({skill: skill});
+Offers.forge();
 
-// Offer.forge({ skill: skill }).fetch().then(function(skillExists) {
-//   if(!skillExists) {
-//     Offer.forge({ skill: skill }).then(function (skill) {
-//       console.log('skill added!');
-//     });
-//   }
-// });
+allOffers.create({skill: 'cooking'}).then(function (skill) {
+  console.log('skill added');
+});
+
+var skill = 'sailing';
+
+allOffers.create({skill: skill});
+
+Offer.forge({ skill: skill }).fetch().then(function(skillExists) {
+  if(!skillExists) {
+    Offer.forge({ skill: skill }).then(function (skill) {
+      console.log('skill added!');
+    });
+  }
+});
+*/
+
 
 /*
 getAllSkillIds is a promise that accepts an array of skill strings, 
@@ -150,13 +153,37 @@ var getSkillId = function (skill) {
   });
 };
 
-// // a function that takes a username and password and forges
-// // forge new user and attach all skills to the user
-// User.forge({})
+// a function that takes a username and password and list of skills and attaches it with the correct relationship
+// forge a new user
+// fetch it
+// if it exists 
+  // reject with error username doesn't exist
+// if it doesn't exist 
+  // create new user and add it to the db
+// then 
+  // call getAllSkillIds on list of skills
+  // attach array of skill id's to the user with the appropriate relation table ('offers' or 'wants');
 
-getAllSkillIds(['snowboarding', 'reading', 'eating pizza']).then(function (ids) {
-  console.log('new skill ids from promise:', ids);
+
+var attachSkillsToUser = function (username, skills, table) {
+  return new Promise(function (resolve, reject) {
+    User.forge({ username: username }).fetch()
+      .then(function (user) {
+        getAllSkillIds(skills).then(function (ids) {
+          user.related(table).attach(ids);
+          resolve(user);
+        });
+      });
+  });
+};
+
+var skills = ['canyoneering', 'hiking'];
+attachSkillsToUser('mario', skills, 'offers').then(function (user) {
+  console.log('skills attached to user!');
 });
+
+
+
 
 
 
